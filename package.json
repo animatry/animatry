@@ -1,6 +1,6 @@
 {
   "name": "animatry",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Javascript animation library.",
   "main": "dist/animatry.min.js",
   "module": "dist/animatry.esm.js",
