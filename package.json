@@ -1,0 +1,48 @@
+{
+  "name": "animatry",
+  "version": "0.0.1",
+  "description": "Javascript animation library.",
+  "main": "dist/animatry.min.js",
+  "module": "dist/animatry.esm.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "rollup -c rollup.config.mjs",
+    "watch": "rollup -c --watch rollup.config.mjs"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "keywords": [
+    "animation",
+    "modern",
+    "javascript",
+    "library",
+    "web",
+    "css-animation",
+    "motion",
+    "keyframes",
+    "transition",
+    "easing",
+    "transform",
+    "performance"
+  ],
+  "devDependencies": {
+    "@rollup/plugin-terser": "^0.4.4",
+    "rollup": "^4.28.1",
+    "rollup-plugin-dts": "^6.1.1",
+    "rollup-plugin-typescript2": "^0.36.0",
+    "rollup-plugin-delete": "^2.1.0"
+  },
+  "author": "Stefan Weiß <stefan@animatry.com>",
+  "license": "SEE LICENSE IN LICENSE",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/animatry/animatry.git"
+  },
+  "bugs": {
+    "url": "https://github.com/animatry/animatry/issues"
+  },
+  "homepage": "https://github.com/animatry/animatry#readme"
+}
