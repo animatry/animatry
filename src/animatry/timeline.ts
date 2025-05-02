@@ -1,7 +1,8 @@
+import { clamp, warn } from "@core";
 import { animatry } from "./animatry";
 import { Controller } from "./controller";
-import { Ease } from "./ease";
-import { ControllerOptions, CoreElement } from "./types";
+import { easing } from "@easing";
+import { ControllerOptions, CoreGlobalSelect } from "./types";
 
 
 
@@ -13,7 +14,7 @@ const _timestamp = (previous: Attached, time: string | number | undefined, label
   if (typeof time === 'number') return time ?? prevEnd;
 
   if(!time && prevEnd >= 10**8) {
-    animatry.warn(`Placing a tween after someting infinite will not work.`);
+    warn(`Placing a tween after someting infinite will not work.`);
   }
 
   if (!time) return prevEnd;
@@ -21,12 +22,12 @@ const _timestamp = (previous: Attached, time: string | number | undefined, label
   const [, label, calc, number, unit] = time.match(/(^[A-Za-z][\w]*|^<|^>)?([+-]=)?([+-]?\d*\.?\d+)?(\w*|%)?$/) || [];
   
   if((unit && !number && !label) || (unit && !number)) {
-    animatry.warn(`invalid format '${time}'`)
+    warn(`invalid format '${time}'`)
     return 0;
   };
   
   const hasLabel = /^[A-Za-z]/.test(time);
-  if (hasLabel && labels[label] == undefined) label ? animatry.warn(`label '${label}' not defined`) : animatry.warn(`invalid format '${time}'`);
+  if (hasLabel && labels[label] == undefined) label ? warn(`label '${label}' not defined`) : warn(`invalid format '${time}'`);
 
   const start = hasLabel ? labels[label] : /^</.test(time) ? prevStart : prevEnd;
   let additive = hasLabel || /^[<>]/.test(time) || unit === '%' || /[+-]=/.test(calc);
@@ -37,7 +38,7 @@ const _timestamp = (previous: Attached, time: string | number | undefined, label
   let unitMultiplier;
   if (unit === '%') {
     if (!object) {
-      unitMultiplier = (previous?.getAnimation()?.getParent()?.getDuration() || 0) / 100;
+      unitMultiplier = (previous?.getAnimation()?.parent()?.duration() || 0) / 100;
     } else if (/[+-]=/.test(calc) || (hasLabel && !calc)) {
       unitMultiplier = (object?.getTotalDuration() || 1e-8) / 100;
     } else {
@@ -70,11 +71,11 @@ class Attached {
   }
 
   getStartTime() {
-    return this.time + this.animation.getDelay();
+    return this.time + this.animation.delay();
   }
 
   getEndTime() {
-    return this.getStartTime() + this.animation.getTotalDuration() / this.animation.getTimeScale() + (this.animation.getTotalDuration() == 0 ? 1e-8 : 0);
+    return this.getStartTime() + this.animation.getTotalDuration() / this.animation.timeScale() + (this.animation.getTotalDuration() == 0 ? 1e-8 : 0);
   }
   
 
@@ -90,7 +91,7 @@ class Timeline extends Controller {
   constructor(options: ControllerOptions = {}) {
     super(Object.assign({
       duration: 0,
-      ease: Ease.none()
+      ease: easing.none()
     }, options));
 
     this.controller = options;
@@ -100,11 +101,15 @@ class Timeline extends Controller {
     return this.controller;
   }
 
-  setTotalProgress(totalProgress: number, events: boolean = true): void {
-    totalProgress = animatry.clamp(totalProgress, 0, 1);
-    const easedElapsed = Controller.getEasedProgress(this, totalProgress) * this.getDuration();
+  totalProgress(): number;
+  totalProgress(totalProgress: number, events?: boolean): this;
+  totalProgress(totalProgress?: number, events: boolean = true): number | this {
+    if(totalProgress === undefined) return super.totalProgress();
+    totalProgress = clamp(totalProgress, 0, 1);
+    const easedElapsed = Controller.getEasedProgress(this, totalProgress) * this.duration();
 
-    let reversed = totalProgress < this.getTotalProgress() !== this.isAlternating();
+    const progress = Controller.getProgress(this, totalProgress);
+    let reversed = progress < this.progress();
 
     const attachedList = reversed ? this.attacheds.slice().reverse() : this.attacheds;
     const shouldInitialize = this.options.preRender;
@@ -120,16 +125,17 @@ class Timeline extends Controller {
       }
 
       if (isConditionMet) {
-        if(animation.getIteration() > 0) {
+        if(animation.iteration() > 0) {
           if(animation.isAlternating()) {
-            animation.setTotalProgress(1, elapsed >= attached.getEndTime());
+            animation.totalProgress(1, elapsed >= attached.getEndTime());
           }
         }
-        animation.setTotalElapsed(elapsed);
+        animation.totalElapsed(elapsed);
       }
     });
     
-    super.setTotalProgress(totalProgress, events);
+    super.totalProgress(totalProgress, events);
+    return this;
 
   }
 
@@ -137,7 +143,7 @@ class Timeline extends Controller {
 
     let maxTime = 0;
     if(!crop) {
-      maxTime = this.getDuration();
+      maxTime = this.duration();
     }
     this.attacheds.forEach(attached => {
       if(attached.getEndTime() > maxTime) {
@@ -145,23 +151,27 @@ class Timeline extends Controller {
       }
     });
     
-    this.setDuration(maxTime, false);
+    this.duration(maxTime, false);
 
   }
 
-  label(name: string, time: number | undefined = undefined) {
+  label(name: string, time: string | number | undefined = undefined) {
     if(!/^[A-Za-z][\w-]*$/.test(name)) {
-      animatry.warn(`'${name}' includes invalid characters`);
+      warn(`'${name}' includes invalid characters`);
       return this;
     }
     this.labels[name] = _timestamp(this.attacheds[this.attacheds.length-1], time, this.labels);
     return this;
   }
 
-  add(object: Controller, time: string | number | undefined = undefined) {
+  add(object: Controller | string, time: string | number | undefined = undefined): this {
+
+    if(typeof object === 'string') {
+      this.label(object, time);
+    }
 
     if(!(object instanceof Controller)) {
-      animatry.warn(`invalid object '${object}' did you intend to use .to() instead of .add() ?`)
+      warn(`invalid object '${object}' did you intend to use .to() instead of .add() ?`)
       object = animatry.to(object as string, time as any);
       time = undefined;
     }
@@ -171,13 +181,13 @@ class Timeline extends Controller {
     const start = _timestamp(previous, time ?? object.options.at ?? previous?.getEndTime() ?? 0, this.labels, object);
 
     if ((object.options.duration as number) >= 10**8 && (object.options.repeat != 0 || this.options.repeat != 0)) {
-      object.setRepeat(0);
-      this.setRepeat(0);
+      object.repeat(0);
+      this.repeat(0);
     } else if(this.options.repeat != 0 && object.options.repeat == -1) {
-      this.setRepeat(0);
+      this.repeat(0);
     }
 
-    object.setParent(this);
+    object.parent(this);
 
     const attached = new Attached(object, start);
     this.attacheds.push(attached);
@@ -187,42 +197,49 @@ class Timeline extends Controller {
     return this;
   }
 
-  play(seek: number | undefined = undefined): void {
+  play(seek: number | undefined = undefined): this {
     this.attacheds.forEach(attached => {
       attached.getAnimation().play();
     });
     super.play(seek);
+    return this;
   }
 
-  reverse(): void {
+  reverse(): this {
     this.attacheds.forEach(attached => {
       attached.getAnimation().reverse();
     });
     super.reverse();
+    return this;
   }
 
-  seek(elapsed: number): void {
+  seek(elapsed: number): this {
     if (typeof elapsed === 'string' && /^[A-Za-z]|^[<>]/.test(elapsed)) {
       let previous = this.attacheds[this.attacheds.length-1];
       elapsed = _timestamp(previous, elapsed, this.labels);
     }
     super.seek(elapsed);
+    return this;
   }
 
-  fromTo(el: CoreElement, from: ControllerOptions, to: ControllerOptions, time: string | number | undefined = undefined): Timeline {
+  fromTo(el: CoreGlobalSelect, from: ControllerOptions, to: ControllerOptions, time: string | number | undefined = undefined): Timeline {
     return this.add(animatry.fromTo(el, from, to), time);
   }
 
-  to(el: CoreElement, to: ControllerOptions, time: string | number | undefined = undefined): Timeline {
+  to(el: CoreGlobalSelect, to: ControllerOptions, time: string | number | undefined = undefined): Timeline {
     return this.add(animatry.to(el, to), time);
   }
 
-  from(el: CoreElement, from: ControllerOptions, time: string | number | undefined = undefined): Timeline {
+  from(el: CoreGlobalSelect, from: ControllerOptions, time: string | number | undefined = undefined): Timeline {
     return this.add(animatry.from(el, from), time);
   }
 
-  set(el: CoreElement, options: ControllerOptions, time: string | number | undefined = undefined) {
+  set(el: CoreGlobalSelect, options: ControllerOptions, time: string | number | undefined = undefined) {
     return this.add(animatry.set(el, options), time);
+  }
+
+  wait(duration: number, options: ControllerOptions = {}, time: string | number | undefined = undefined) {
+    return this.add(new Controller(Object.assign(options, { duration })), time);
   }
 
 }

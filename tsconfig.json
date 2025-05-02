@@ -10,6 +10,30 @@
     "sourceMap": true,
     "removeComments": true,
     "importHelpers": true,
+    
+    "baseUrl": "./src",
+    "paths": {
+      "@animatry/*": ["animatry/*"],
+
+      "@core": ["core/index.ts"],
+      "@easing": ["easing/index.ts"],
+      "@metrics": ["metrics/index.ts"],
+      "@path": ["path/index.ts"],
+      
+      "@animatry": ["animatry/index.ts"],
+
+      "@match-media": ["match-media/index.ts"],
+
+      "@scroll-observer": ["scroll-observer/index.ts"],
+      "@scroll-smooth": ["scroll-smooth/index.ts"],
+      "@scroll-to": ["scroll-to/index.ts"],
+
+      "@split-text": ["split-text/index.ts"],
+      "@scale-text": ["scale-text/index.ts"],
+
+      "@morph-path": ["morph-path/index.ts"],
+      "@magnetic": ["magnetic/index.ts"]
+    },
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist"]

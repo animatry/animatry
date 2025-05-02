@@ -1,7 +1,11 @@
-type CoreElement = HTMLElement | HTMLElement[] | NodeList | Document | Array<HTMLElement> | string;
+type CoreDomElement = HTMLElement | SVGElement;
+type CoreDomSelect = CoreDomElement | CoreDomElement[] | NodeList | Document | string | null;
+type CoreGlobalElement = CoreDomElement | { [key: string]: any };
+type CoreGlobalSelect = CoreDomSelect | CoreGlobalElement | { [key: string]: any }[];
+
 
 type controllerId = string | number;
-type ease = Function;
+type ease = Function | string;
 
 interface ControllerCallbacks {
 
@@ -33,7 +37,9 @@ interface ControllerSettings {
   paused?: boolean,
   
   ease?: ease,
+  reverseEase?: ease,
   alternateEase?: ease,
+  reverseAlternateEase?: ease,
   
   playhead?: number,
   iteration?: number,
@@ -67,10 +73,11 @@ interface StaggerOptions extends ControllerCallbacks {
   iterationDelay?: number,
   alternate?: boolean,
   ease?: ease,
+  reverseEase?: ease,
   alternateEase?: ease,
+  reverseAlternateEase?: ease,
 }
 
-// type KeyframeOptions = Array<Object> | Object;
 type KeyframeOptions = any;
 
 type MatrixResult = {
@@ -89,13 +96,34 @@ type MatrixResult = {
   [key: string]: any;
 };
 
+type MatrixNumberResult = {
+  translateX: number;
+  translateY: number;
+  translateZ: number;
+  scaleX: number;
+  scaleY: number;
+  scaleZ: number;
+  rotateX: number;
+  rotateY: number;
+  rotateZ: number;
+  skewX: number;
+  skewY: number;
+
+  [key: string]: any;
+};
+
 type SignedNumberObject = [boolean, number, string];
 
-export {
-  CoreElement,
+export type {
+  CoreDomElement,
+  CoreDomSelect,
+  CoreGlobalSelect,
+  CoreGlobalElement,
   controllerId, ease,
   ControllerCallbacks, ControllerSettings, ControllerOptions,
   StaggerOptions, KeyframeOptions,
-  MatrixResult,
+  MatrixResult, MatrixNumberResult,
   SignedNumberObject
 };
+export type { Timeline } from "./timeline";
+export type { Relative } from "./relative";

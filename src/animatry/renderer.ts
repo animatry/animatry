@@ -1,24 +1,26 @@
-import { animatry } from "./animatry";
-import { decomposeMatrix, unifyMatrix } from "./matrix";
-import { stringifySignedNumber } from "./signed-number";
+import { select, selectElementOrObject } from "@core";
+import { decomposeMatrix, unifyMatrix, stringifySignedNumber } from "@metrics";
+import { Relative } from "./relative";
 import { Tween } from "./tween";
-import { CoreElement } from "./types";
+import { CoreDomElement, CoreGlobalElement } from "./types";
 
 
 
 class Fragment {
   
-  private element: HTMLElement;
-  private initialTransform: any;
+  private element: CoreGlobalElement;
+  private initialTrans: any;
   private properties: any;
 
-  constructor(element: HTMLElement) {
+  constructor(element: CoreGlobalElement) {
     this.element = element;
-    this.initialTransform = unifyMatrix(decomposeMatrix(getComputedStyle(element).transform));
-    Object.keys(this.initialTransform).forEach(key => {
-      this.initialTransform[key] = stringifySignedNumber(this.initialTransform[key]);
-    });
-    this.properties = []
+    if(element instanceof HTMLElement || element instanceof SVGElement) {
+      this.initialTrans = unifyMatrix(decomposeMatrix(getComputedStyle(element).transform));
+      Object.keys(this.initialTrans).forEach(key => {
+        this.initialTrans[key] = stringifySignedNumber(this.initialTrans[key]);
+      });
+    }
+    this.properties = {};
   }
 
   getProperties() {
@@ -26,10 +28,18 @@ class Fragment {
   }
 
   setProperties(properties: any) {
-    this.properties = [
-      { ...this.initialTransform, ...this.properties[0], ...properties[0] },
-      { ...this.properties[1], ...properties[1] }
-    ];
+    if(properties.css) {
+      this.properties = {
+        css: { ...this.properties.css, ...properties.css },
+        trans: { ...this.initialTrans, ...this.properties.trans, ...properties.trans },
+        attr: { ...this.properties.attr, ...properties.attr },
+        plugins: { ...this.properties.plugins, ...properties.plugins },
+      }
+    } else {
+      this.properties = {
+        ...this.properties, ...properties
+      }
+    }
   }
 
   getElement() {
@@ -42,8 +52,9 @@ class Renderer {
 
   private static fragments: Fragment[] = [];
   private static tweens: Tween[] = [];
+  private static relatives: Relative[] = [];
 
-  static addTween(element: HTMLElement, tween: Tween): Fragment {
+  static addTween(element: CoreGlobalElement, tween: Tween): Fragment {
     let fragment = Renderer.fragments.find((fragment) => fragment.getElement() === element);
     if(!fragment) {
       fragment = new Fragment(element);
@@ -55,15 +66,38 @@ class Renderer {
     return fragment;
   }
 
-  static getTweens(elements: CoreElement) {
+  static getTweens(elements: CoreGlobalElement[]) {
     let found: Tween[] = [];
-    elements = animatry.select(elements);
+    elements = selectElementOrObject(elements);
     elements.forEach(element => {
       this.tweens.forEach(tween => {
-        if(tween.elements[0] == element) {
+        if(tween.elements.includes(element)) {
           found.push(tween);
         }
       });
+    });
+    return found;
+  }
+
+  static addRelative(element: CoreDomElement, relative: Relative): Fragment {
+    let fragment = Renderer.fragments.find((fragment) => fragment.getElement() === element);
+    if(!fragment) {
+      fragment = new Fragment(element);
+      Renderer.fragments.push(fragment);
+    }
+    if(!this.relatives.find((found) => found === relative)) {
+      this.relatives.push(relative);
+    }
+    return fragment;
+  }
+
+  static getRelatives(element: CoreDomElement) {
+    let found: Relative[] = [];
+    element = select(element)[0];
+    this.relatives.forEach(relative => {
+      if(relative.elements.includes(element)) {
+        found.push(relative);
+      }
     });
     return found;
   }

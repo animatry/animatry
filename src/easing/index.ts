@@ -1,0 +1,1 @@
+export { easing } from "./easing";

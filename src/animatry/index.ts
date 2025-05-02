@@ -1,3 +1,1 @@
-import { animatry } from "./animatry";
-
-export default animatry;
+export { animatry } from "./animatry";

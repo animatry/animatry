@@ -1,20 +1,20 @@
-import { animatry } from "./animatry";
-import { Ease } from "./ease";
+import { filterObjects } from "@core";
+import { easing } from "@easing";
 import { controllerOptions, controllerSettings } from "./options";
 import { Timeline } from "./timeline";
 import { Tween } from "./tween";
-import { ControllerOptions, ControllerSettings, KeyframeOptions } from "./types";
+import { ControllerOptions, ControllerSettings, CoreGlobalElement, KeyframeOptions } from "./types";
 
 
 
-const keyframes = (tween: Tween, element: HTMLElement, from: ControllerSettings, to: ControllerSettings) => {
+const keyframes = (tween: Tween, element: CoreGlobalElement, from: ControllerSettings, to: ControllerSettings) => {
   const timeline = new Timeline();
   const options = (tween.options.keyframes as KeyframeOptions);
-  const duration = tween.getDuration() || 1e-8;
+  const duration = tween.duration() || 1e-8;
   const preRender = tween.options.preRender;
-  timeline.options.ease = options.ease ? Ease.parse(options.ease) : Ease.parse('none');
+  timeline.options.ease = options.ease ? easing.parse(options.ease) : easing.parse('none');
 
-  const fromValues = animatry.filterObjects(from, controllerSettings())[1];
+  const fromValues = filterObjects(from, controllerSettings())[1];
 
 
   // array notation
@@ -38,8 +38,8 @@ const keyframes = (tween: Tween, element: HTMLElement, from: ControllerSettings,
   // object notation
   
   else {
-    const keyframes = animatry.filterObjects(options, { ease: null, easeEach: null })[1];
-    const toValues = animatry.filterObjects(to, controllerSettings())[1];
+    const keyframes = filterObjects(options, { ease: null, easeEach: null })[1];
+    const toValues = filterObjects(to, controllerSettings())[1];
 
 
     // percentage based
@@ -70,7 +70,7 @@ const keyframes = (tween: Tween, element: HTMLElement, from: ControllerSettings,
       }), {});
 
       combinedPercentages.forEach(key => {
-        const filtered = animatry.filterObjects(combinedKeyframes[key], controllerOptions());
+        const filtered = filterObjects(combinedKeyframes[key], controllerOptions());
         const controller = filtered[0] as ControllerOptions;
         const frameOptions: { [key: string]: any } = filtered[1];
         let numberKey = 1/100 * Number.parseFloat(key);
@@ -85,7 +85,7 @@ const keyframes = (tween: Tween, element: HTMLElement, from: ControllerSettings,
                   [property]: frameOptions[property],
                   duration: (numberKey - (lastAppeared[property] ?? 0)) * duration,
                   ...controller as ControllerOptions,
-                  ease: controller['ease'] ?? options['easeEach'] ?? tween.options.ease ?? Ease.powerInOut(),
+                  ease: controller['ease'] ?? options['easeEach'] ?? tween.options.ease ?? easing.powerInOut(),
                   ...(preRender && !lastAppeared[property]) ? { preRender: true } : {},
                 }
               ),
@@ -97,7 +97,7 @@ const keyframes = (tween: Tween, element: HTMLElement, from: ControllerSettings,
           
         });
 
-        timeline.setDuration(duration);
+        timeline.duration(duration);
       });
     }
     
@@ -113,17 +113,12 @@ const keyframes = (tween: Tween, element: HTMLElement, from: ControllerSettings,
         const stepDuration = duration / Math.max(1, valueCount - 1);
 
         for (let index = 0; index < (valueCount === 1 ? 1 : valueCount - 1); index++) {
-          timeline.add(
-            new Tween(element, {
-              [key]: values[index]
-            }, {
-              [key]: valueCount === 1 ? values[0] : values[index + 1],
-              at: valueCount === 1 ? 0 : index * stepDuration,
-              duration: valueCount === 1 ? duration / valueCount : stepDuration,
-              ease: options['easeEach'] ?? tween.options.ease,
-              ...(preRender && index === 0 ? { preRender: true } : {}),
-            })
-          );
+          timeline.to(element, {
+            [key]: valueCount === 1 ? values[0] : values[index + 1],
+            duration: valueCount === 1 ? duration / valueCount : stepDuration,
+            ease: options['easeEach'] ?? tween.options.ease,
+            ...(preRender && index === 0 ? { preRender: true } : {}),
+          }, valueCount === 1 ? 0 : index * stepDuration);
         }
 
       });

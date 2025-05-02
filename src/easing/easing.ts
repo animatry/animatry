@@ -1,4 +1,4 @@
-import { animatry } from "./animatry";
+import { warn } from "@core";
 
 
 
@@ -7,23 +7,23 @@ class Ease {
 
   // linear
 
-  static none = () => (x: number) => x;
+  none = () => (x: number) => x;
 
-  static linear = () => (x: number) => x;
+  linear = () => (x: number) => x;
 
 
   // power
   
-  static powerIn = (power: number = 1) => (x: number) => Math.pow(x, power + 1);
+  powerIn = (power: number = 1) => (x: number) => Math.pow(x, power + 1);
 
-  static powerOut = (power: number = 1) => (x: number) => 1 - Math.pow(1 - x, power + 1);
+  powerOut = (power: number = 1) => (x: number) => 1 - Math.pow(1 - x, power + 1);
 
-  static powerInOut = (power: number = 1) => (x: number) => x < 0.5 ? 0.5 * Math.pow(2 * x, power + 1) : 1 - 0.5 * Math.pow(2 * (1 - x), power + 1);
+  powerInOut = (power: number = 1) => (x: number) => x < 0.5 ? 0.5 * Math.pow(2 * x, power + 1) : 1 - 0.5 * Math.pow(2 * (1 - x), power + 1);
 
 
   // steps
 
-  static steps(numSteps: number = 3): (x: number) => number {
+  steps(numSteps: number = 3): (x: number) => number {
     const stepSize = 1 / numSteps;
     const halfStepSize = stepSize / 2;
     return (x: number) => {
@@ -36,9 +36,9 @@ class Ease {
 
   // bounce
 
-  static bounceIn = () => (x: number) => 1 - this.bounceOut()(1 - x);
+  bounceIn = () => (x: number) => 1 - this.bounceOut()(1 - x);
 
-  static bounceOut = () => (x: number) => {
+  bounceOut = () => (x: number) => {
     if (x < 1 / 2.75) {
       return 7.5625 * x * x;
     } else if (x < 2 / 2.75) {
@@ -50,14 +50,14 @@ class Ease {
     }
   };
 
-  static bounceInOut = () => (x: number) => x < 0.5 ? 0.5 * this.bounceIn()(x * 2) : 0.5 * this.bounceOut()(x * 2 - 1) + 0.5;
+  bounceInOut = () => (x: number) => x < 0.5 ? 0.5 * this.bounceIn()(x * 2) : 0.5 * this.bounceOut()(x * 2 - 1) + 0.5;
 
 
   // elastic
 
-  static elasticIn = (frequency: number = 6) => (x: number) => 1 - this.elasticOut(frequency)(1-x);
+  elasticIn = (frequency: number = 6) => (x: number) => 1 - this.elasticOut(frequency)(1-x);
 
-  static elasticOut = (frequency: number = 6) => (x: number) => {
+  elasticOut = (frequency: number = 6) => (x: number) => {
     if (x < 0) return 0;
     if (x > 1) return 1;
     const decay = Math.pow(0.025, x);
@@ -66,21 +66,21 @@ class Ease {
     return 1 + Math.sin(x * frequency * Math.PI - Math.PI / 2) * decay * (1 - oscillation) * smoothing;
   };
 
-  static elasticInOut = (frequency: number = 6) => (x: number) => x < 0.5 ? this.elasticIn(frequency)(x * 2) * 0.5 : this.elasticOut(frequency)(x * 2 - 1) * 0.5 + 0.5;
+  elasticInOut = (frequency: number = 6) => (x: number) => x < 0.5 ? this.elasticIn(frequency)(x * 2) * 0.5 : this.elasticOut(frequency)(x * 2 - 1) * 0.5 + 0.5;
 
 
   // back
 
-  static backIn = (magnitude = 1.70158) => (x: number) => x * x * ((magnitude + 1) * x - magnitude);
+  backIn = (magnitude = 1.70158) => (x: number) => x * x * ((magnitude + 1) * x - magnitude);
   
-  static backOut = (magnitude = 1.70158) => (x: number) => 1 + ((x - 1)**2 * ((magnitude + 1) * (x - 1) + magnitude));
+  backOut = (magnitude = 1.70158) => (x: number) => 1 + ((x - 1)**2 * ((magnitude + 1) * (x - 1) + magnitude));
 
-  static backInOut = (magnitude = 1.70158) => (x: number) => x < 0.5 ? 0.5 * this.backIn(magnitude)(x * 2) : 0.5 * this.backOut(magnitude)(x * 2 - 1) + 0.5;
+  backInOut = (magnitude = 1.70158) => (x: number) => x < 0.5 ? 0.5 * this.backIn(magnitude)(x * 2) : 0.5 * this.backOut(magnitude)(x * 2 - 1) + 0.5;
 
 
   // cubic-bezier
 
-  static cubicBezier(p1x: number, p1y: number, p2x: number, p2y: number): (x: number) => number {
+  cubicBezier(p1x: number, p1y: number, p2x: number, p2y: number): (x: number) => number {
     function cubic(t: number, a1: number, a2: number) {
         const c = 3 * a1;
         const b = 3 * (a2 - a1) - c;
@@ -110,7 +110,7 @@ class Ease {
 
   // parse
 
-  static parse(ease: Function | string | undefined): Function | undefined {
+  parse(ease: Function | string | undefined): Function | undefined {
     if (typeof ease == 'string') {
       const easeFunctionMatch = ease.match(/(\w+)\(([^)]*)\)/);
       if (easeFunctionMatch) {
@@ -120,12 +120,12 @@ class Ease {
         if ((this as any)[functionName] !== undefined) {
           return (this as any)[functionName](...args);
         }
-        animatry.warn(`ease '${functionName}' is not defined.`);
-        return Ease.linear();
+        warn(`ease '${functionName}' is not defined.`);
+        return this.linear();
       }
       if ((this as any)[ease] == undefined) {
-        animatry.warn(`ease '${ease}' is not defined.`);
-        return Ease.linear();
+        warn(`ease '${ease}' is not defined.`);
+        return undefined;
       }
       return (this as any)[ease]();
     }
@@ -134,4 +134,6 @@ class Ease {
 
 }
 
-export { Ease };
+const easing = new Ease();
+
+export { easing };

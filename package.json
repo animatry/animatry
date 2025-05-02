@@ -1,13 +1,72 @@
 {
   "name": "animatry",
-  "version": "0.0.2",
+  "version": "0.1.0",
   "description": "Javascript animation library.",
-  "main": "dist/animatry.min.js",
-  "module": "dist/animatry.esm.js",
-  "types": "dist/index.d.ts",
+  "type": "module",
+  "main": "./dist/umd/animatry.min.js",
+  "module": "./dist/esm/index.js",
+  "types": "./dist/types/index.d.ts",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "import": "./dist/esm/index.js",
+      "require": "./dist/umd/animatry.min.js",
+      "types": "./dist/types/index.d.ts"
+    },
+    "./animatry": {
+      "import": "./dist/esm/animatry.js",
+      "require": "./dist/umd/animatry.min.js",
+      "types": "./dist/types/animatry.d.ts"
+    },
+    "./core": {
+      "import": "./dist/esm/core.js",
+      "require": "./dist/umd/core.min.js",
+      "types": "./dist/types/core.d.ts"
+    },
+    "./matchMedia": {
+      "import": "./dist/esm/matchMedia.js",
+      "require": "./dist/umd/matchMedia.min.js",
+      "types": "./dist/types/matchMedia.d.ts"
+    },
+    "./scrollObserver": {
+      "import": "./dist/esm/scrollObserver.js",
+      "require": "./dist/umd/scrollObserver.min.js",
+      "types": "./dist/types/scrollObserver.d.ts"
+    },
+    "./scrollSmooth": {
+      "import": "./dist/esm/scrollSmooth.js",
+      "require": "./dist/umd/scrollSmooth.min.js",
+      "types": "./dist/types/scrollSmooth.d.ts"
+    },
+    "./scrollTo": {
+      "import": "./dist/esm/scrollTo.js",
+      "require": "./dist/umd/scrollTo.min.js",
+      "types": "./dist/types/scrollTo.d.ts"
+    },
+    "./splitText": {
+      "import": "./dist/esm/splitText.js",
+      "require": "./dist/umd/splitText.min.js",
+      "types": "./dist/types/splitText.d.ts"
+    },
+    "./scaleText": {
+      "import": "./dist/esm/scaleText.js",
+      "require": "./dist/umd/scaleText.min.js",
+      "types": "./dist/types/scaleText.d.ts"
+    },
+    "./morphPath": {
+      "import": "./dist/esm/morphPath.js",
+      "require": "./dist/umd/morphPath.min.js",
+      "types": "./dist/types/morphPath.d.ts"
+    },
+    "./magnetic": {
+      "import": "./dist/esm/magnetic.js",
+      "require": "./dist/umd/magnetic.min.js",
+      "types": "./dist/types/magnetic.d.ts"
+    }
+  },
   "scripts": {
-    "build": "rollup -c rollup.config.mjs",
-    "watch": "rollup -c --watch rollup.config.mjs"
+    "build": "rollup -c",
+    "watch": "rollup -c --watch"
   },
   "files": [
     "dist",
@@ -18,6 +77,7 @@
     "animation",
     "modern",
     "javascript",
+    "react",
     "library",
     "web",
     "css-animation",
@@ -29,14 +89,17 @@
     "performance"
   ],
   "devDependencies": {
+    "@rollup/plugin-alias": "^5.1.1",
+    "@rollup/plugin-commonjs": "^28.0.3",
+    "@rollup/plugin-node-resolve": "^16.0.1",
     "@rollup/plugin-terser": "^0.4.4",
     "rollup": "^4.28.1",
+    "rollup-plugin-delete": "^2.1.0",
     "rollup-plugin-dts": "^6.1.1",
-    "rollup-plugin-typescript2": "^0.36.0",
-    "rollup-plugin-delete": "^2.1.0"
+    "rollup-plugin-typescript2": "^0.36.0"
   },
   "author": "Stefan Weiß <stefan@animatry.com>",
-  "license": "SEE LICENSE IN LICENSE",
+  "license": "MIT",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/animatry/animatry.git"
@@ -44,5 +107,5 @@
   "bugs": {
     "url": "https://github.com/animatry/animatry/issues"
   },
-  "homepage": "https://github.com/animatry/animatry#readme"
+  "homepage": "https://animatry.com"
 }

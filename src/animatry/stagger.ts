@@ -1,17 +1,17 @@
-import { animatry } from "./animatry";
-import { Ease } from "./ease";
+import { selectElementOrObject, warn } from "@core";
+import { easing } from "@easing";
 import { controllerFunctions } from "./options";
 import { Timeline } from "./timeline";
 import { Tween } from "./tween";
-import { ControllerSettings, CoreElement, StaggerOptions } from "./types";
+import { ControllerSettings, CoreDomElement, CoreGlobalElement, StaggerOptions } from "./types";
 
 
 
-const _elementCenter = (element: HTMLElement): [number, number] => {
+const _elementCenter = (element: CoreDomElement): [number, number] => {
   const rect = element.getBoundingClientRect();
   return [rect.left + rect.width / 2, rect.top + rect.height / 2];
 }
-const _measureGrid = (elements: Array<HTMLElement>): [number, number] => {
+const _measureGrid = (elements: CoreDomElement[]): [number, number] => {
   return [new Set(elements.map(element => _elementCenter(element)[0])).size, new Set(elements.map(element => _elementCenter(element)[1])).size];
 }
 const _gridIndex = ([rows, columns]: [number, number], index: number): [number, number] => {
@@ -32,11 +32,16 @@ const _allPositionsEqual = <T>(arr: [T, T][]): boolean => {
 
 
 
-const _distributeArray = (elements: Array<HTMLElement>, options: StaggerOptions) => {
+const _distributeArray = (elements: CoreGlobalElement[], options: StaggerOptions) => {
   if(options.each == 0) return Array.from({ length: elements.length}, () => 0);
 
   if((Array.isArray(options.from) || options.axis || options.from == 'center' || options.from == 'right top' || options.from == 'left bottom') && options.layout == undefined) {
     options.layout = 'distance';
+  }
+
+  if(options.layout && !(Array.isArray(elements) && elements.every(el => el instanceof HTMLElement))) {
+    warn(`You can not use stagger 'layout' for objects.`);
+    options.layout = undefined;
   }
 
   switch (options.from) {
@@ -66,11 +71,19 @@ const _distributeArray = (elements: Array<HTMLElement>, options: StaggerOptions)
       options.from = [0, 1];
       break
     case 'random':
-      if(options.invert) animatry.warn(`stagger invert has no effect when using random`);
-      if(options.axis) animatry.warn(`stagger axis has no effect when using random`);
+      if(options.invert) warn(`stagger invert has no effect when using random`);
+      if(options.axis) warn(`stagger axis has no effect when using random`);
       return _normalizeArray(Array.from({ length: elements.length }, () => Math.random())).map(value => (value * (options.each as number) * (elements.length - 1)));
     default:
       break;
+  }
+
+  if(!(Array.isArray(elements) && elements.every(el => el instanceof HTMLElement))) {
+    const result = [];
+    for (let i = 0; i < elements.length; i++) {
+      result.push(Math.abs(i - (options.from as number)));
+    }
+    return result;
   }
 
   let result: Array<number> = [];
@@ -106,7 +119,7 @@ const _distributeArray = (elements: Array<HTMLElement>, options: StaggerOptions)
     }
   
     if (_allPositionsEqual(elementCenters)) {
-      animatry.warn(`Elements on the same location. Can't apply any stagger layouts.`);
+      warn(`Elements on the same location. Can't apply any stagger layouts.`);
       result = _normalizeArray(elements.map((_, i) => i)).map(value => (value * (options.each as number) * (elements.length - 1)));
       return result;
     }
@@ -147,8 +160,8 @@ const _distributeArray = (elements: Array<HTMLElement>, options: StaggerOptions)
 
 
 
-const stagger = (tween: Tween, elements: CoreElement, from: ControllerSettings, to: ControllerSettings): Timeline => {
-  elements = animatry.select(elements);
+const stagger = (tween: Tween, elements: CoreGlobalElement[], from: ControllerSettings, to: ControllerSettings): Timeline => {
+  elements = selectElementOrObject(elements);
   let options = (tween.options.stagger as number | StaggerOptions);
 
   // normalise base settings
@@ -160,16 +173,18 @@ const stagger = (tween: Tween, elements: CoreElement, from: ControllerSettings, 
     to[func] = (options as any)[func] ? (options as any)[func] : () => {};
   });
   
-  const timeline = new Timeline({ ease: options.ease ?? Ease.none() });
+  const timeline = new Timeline({ ease: options.ease ?? easing.none() });
 
   const staggerArray = _distributeArray(elements, options);
 
   elements.forEach((element, index) => {
-    timeline.add(new Tween(element, from, Object.assign({}, to, {
+    timeline.add(new Tween([element], from, Object.assign({}, to, {
       at: Number.parseFloat(staggerArray[index].toFixed(4)),
       duration: tween.options.duration,
       ease: tween.options.ease,
+      reverseEase: tween.options.reverseEase,
       alternateEase: tween.options.alternateEase,
+      reverseAlternateEase: tween.options.reverseAlternateEase,
       repeat: (tween.options.stagger as StaggerOptions).repeat ?? 0,
       iterationDelay: (tween.options.stagger as StaggerOptions).iterationDelay ?? 0,
       alternate: (tween.options.stagger as StaggerOptions).alternate ?? false,
@@ -179,7 +194,7 @@ const stagger = (tween: Tween, elements: CoreElement, from: ControllerSettings, 
       stagger: 0,
     })));
   });
-  tween.setDuration(timeline.getDuration());
+  tween.duration(timeline.duration());
   tween.to = {};
 
   return timeline;
